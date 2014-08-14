@@ -1,0 +1,116 @@
+<?php
+/**
+ * @file
+ *
+ */
+
+function decro_menu() {
+	return array(
+		'carousel' => array(
+			'title' => 'decro.net | Home',
+			'page callback' => 'decro_carousel',
+			'access callback' => TRUE,
+			'type' => MENU_CALLBACK,
+		) ,
+	);
+}
+
+function decro_theme() {
+	return array(
+		'decro-powered-by' => array(
+			'path' => drupal_get_path('module', 'decro') . '/themes',
+			'template' => 'powered-by',
+		)
+	);
+}
+
+function decro_block_view_alter(&$data, $block) {
+	if ($block->module == 'system' && $block->delta == 'powered-by') {
+		// $data['content'] = '<span>Powered by <a target="_blank" href="http://derreklemar.com">Derrek Lemar Croney</a>.</span>';
+		$data['content'] = theme('decro-powered-by', array());
+	}
+}
+
+function decro_preprocess_page(&$variables) {
+	$build = array();
+	
+	drupal_is_front_page() && _decro_build_carousel($build);
+	drupal_is_front_page() && _decro_build_featurettes($build);
+	
+	if (!empty($build['carousel'])) {
+		$variables['page']['carousel'] = $build['carousel'];
+	}
+	if (!empty($build['featurettes'])) {
+		$variables['page']['featurettes'] = $build['featurettes'];
+	}
+}
+
+## PRIVATE functions
+/**
+ * Build the carousel section
+ */
+function _decro_build_carousel(&$build) {
+	$term = reset(taxonomy_get_term_by_name('carousel-item', 'tags'));
+	
+	if ($term == NULL) { return; }
+	
+	$nids = taxonomy_select_nodes($term->tid, FALSE, 5);
+	$nodes = node_load_multiple($nids);
+	
+	for ($i = 0; $i < count($nids); $i++) {
+		$items[] = array('data' => '', 'data-slide-to' => $i, 'data-target' => '#myCarousel');
+	}
+	
+	$build['carousel']['indicators'] = array(
+		'#theme' => 'item_list',
+		'#items' => $items,
+		'#type' => 'ol',
+		'#attributes' => array('class' => array('carousel-indicators')),
+	);
+	
+	$build['carousel']['inner'] = array(
+		'#type' => 'container',
+		'#attributes' => array('class' => array('carousel-inner')),
+	);
+	
+	foreach ($nodes as $node) {
+		$node_wrapper = entity_metadata_wrapper('node', $node);
+		$field_image = $node_wrapper->field_image->value();
+		
+		$build['carousel']['inner'][$node->nid]['carousel-item'] = array(
+			'#type' => 'container',
+			'#attributes' => array('class'=>array('item', 'active')),
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['image'] = array(
+			'#type' => 'markup',
+			'#markup' => '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAGZmZgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Slide" />',
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['container'] = array(
+			'#type' => 'container',
+			'#attributes' => array('class' => array('container')),
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['container']['caption'] = array(
+			'#type' => 'container',
+			'#attributes' => array('class' => array('carousel-caption')),
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['container']['caption']['image'] = array(
+			'#theme' => 'image',
+			'#path' => image_style_url('medium', $field_image['uri']),
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['container']['caption']['header'] = array(
+			'#type' => 'markup',
+			'#markup' => '<h1>' . $node->title . '</h1>',
+		);
+		$build['carousel']['inner'][$node->nid]['carousel-item']['container']['caption']['body'] = array(
+			'#type' => 'markup',
+			'#markup' => $node_wrapper->body->value->raw(),
+		);
+	}	
+}
+
+/**
+ * Build the featurettes section
+ */
+function _decro_build_featurettes(&$build) {
+	
+}

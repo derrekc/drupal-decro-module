@@ -1,0 +1,5 @@
+name = decro Web System
+description = Utility Hooks and Such
+core = 7.x
+package = decro UI
+
